@@ -1,0 +1,16 @@
+RELEASE-VERSION
+*.egg-info
+*.hex
+*.pyc
+.ropeproject
+*/Arduino/*/Config.h
+setup.py
+paver-minilib.zip
+build/*
+*/*_pb2.py
+*/Arduino/*/*CommandProcessor.h
+*.o
+*/protobuf/nano
+*/protobuf/py
+*/protobuf/*.proto
+.sconsign.dblite
