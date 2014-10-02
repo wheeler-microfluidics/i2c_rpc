@@ -21,7 +21,7 @@ pprint(i2c_rpc_files)
 
 PROTO_PREFIX = 'commands'
 
-DEFAULT_ARDUINO_BOARDS = ['uno']
+DEFAULT_ARDUINO_BOARDS = ['uno', 'mega2560']
 
 setup(name='wheeler.i2c_rpc',
       version=version.getVersion(),

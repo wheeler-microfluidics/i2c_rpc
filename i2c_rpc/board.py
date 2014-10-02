@@ -1,27 +1,46 @@
+from collections import OrderedDict
 import time
 
-import numpy as np
-from nadamq.command_proxy import (NodeProxy, CommandRequestManager,
+from nadamq.command_proxy import (NodeProxy, RemoteNodeProxy,
+                                  CommandRequestManager,
                                   CommandRequestManagerDebug, SerialStream)
-from serial_device import get_serial_ports
 from .requests import (REQUEST_TYPES, CommandResponse, CommandRequest,
                        CommandType)
-from .protobuf_custom import DescriptionStrings
+try:
+    from .protobuf_custom import DescriptionStrings
+except ImportError:
+    # `protobuf_commands.py` must have been generated with an old version of
+    # `protoc`, so we have to manually wrap the `_COMMANDTYPE` enum.
+    from .protobuf_custom import _DESCRIPTIONSTRINGS
+
+    class DescriptionStrings(object):
+        by_name = OrderedDict(sorted([(k, v.number)
+                                      for k, v in
+                                      _DESCRIPTIONSTRINGS.values_by_name
+                                      .items()]))
+        by_value = OrderedDict([(v, k) for k, v in by_name.items()])
+
+        @classmethod
+        def Name(cls, value):
+            return cls.by_value[value]
+
+        @classmethod
+        def Value(cls, name):
+            return cls.by_name[name]
+
+        @classmethod
+        def items(cls):
+            return cls.by_name.items()
 
 
-class I2CBoard(object):
-    def __init__(self, auto_connect=False, port=None, baudrate=115200,
-                 timeout=None):
-        self._board = None
-        self._connected = False
-        self._auto_amplifier_gain_initialized = False
-        if auto_connect:
-            self.connect(port=port, baudrate=baudrate, timeout=timeout)
+class I2CBoardMixin(object):
+    def description(self):
+        return dict([(k, self.description_string(key=v))
+                     for k, v in DescriptionStrings.items()])
 
-    def connect(self, port=None, baudrate=115200, debug=False, timeout=None):
-        # Attempt to connect to the board.  If no port was specified, try each
-        # available serial port until a successful connection is established.
-        self._board = None
+
+class I2CBoard(NodeProxy, I2CBoardMixin):
+    def __init__(self, port, baudrate=115200, debug=False):
         if not debug:
             request_manager = CommandRequestManager(REQUEST_TYPES,
                                                     CommandRequest,
@@ -32,55 +51,27 @@ class I2CBoard(object):
                                                          CommandRequest,
                                                          CommandResponse,
                                                          CommandType)
-        if port is not None:
-            ports = [port]
+        stream = SerialStream(port, baudrate=baudrate)
+        super(I2CBoard, self).__init__(request_manager, stream)
+        self._stream._serial.setDTR(False)
+        time.sleep(0.5)
+        self._stream._serial.setDTR(True)
+        time.sleep(1)
+        print 'free memory:', self.ram_free()
+
+
+class RemoteI2CBoard(RemoteNodeProxy, I2CBoardMixin):
+    def __init__(self, forward_proxy, remote_address, debug=False,
+                 timeout=None):
+        if not debug:
+            request_manager = CommandRequestManager(REQUEST_TYPES,
+                                                    CommandRequest,
+                                                    CommandResponse,
+                                                    CommandType)
         else:
-            ports = get_serial_ports()
-        for port in ports:
-            stream = SerialStream(port, baudrate=baudrate)
-            if timeout is not None:
-                proxy = NodeProxy(request_manager, stream, timeout=timeout)
-            else:
-                proxy = NodeProxy(request_manager, stream)
-            stream._serial.setDTR(False)
-            time.sleep(.2)
-            stream._serial.setDTR(True)
-            time.sleep(1.0)
-            if self._test_connection(proxy):
-                break
-        if not self.connected:
-            raise IOError('Could not connect to control board.')
-        self.calibration = self.create_feedback_calibration()
-        #self._auto_amplifier_gain_initialized = False
-
-    def _test_connection(self, proxy):
-        try:
-            proxy.ram_free()
-            self._board = proxy
-            self._connected = True
-        except:
-            self._connected = False
-        return self.connected
-
-    @property
-    def port(self):
-        return self.board._stream._serial.port
-
-    @property
-    def baudrate(self):
-        return self.board._stream._serial.baudrate
-
-    @property
-    def board(self):
-        return self._board
-
-    @property
-    def connected(self):
-        return self._connected
-
-    def description(self):
-        return dict([(k, self.board.description_string(key=v))
-                     for k, v in DescriptionStrings.items()])
-
-    def i2c_scan(self):
-        return np.fromstring(self.board.i2c_scan(), dtype=np.uint8).tolist()
+            request_manager = CommandRequestManagerDebug(REQUEST_TYPES,
+                                                         CommandRequest,
+                                                         CommandResponse,
+                                                         CommandType)
+        super(RemoteI2CBoard, self).__init__(forward_proxy, remote_address,
+                                             request_manager)

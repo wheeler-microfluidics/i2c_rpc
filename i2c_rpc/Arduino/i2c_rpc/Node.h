@@ -35,6 +35,13 @@ public:
     EEPROM.write(EEPROM__I2C_ADDRESS, i2c_address_);
     return address;
   }
+  uint8_t ping_pong_uint8(uint8_t value) { return value; }
+  uint32_t ping_pong_uint32(uint32_t value) { return value; }
+  uint16_t ping_pong_uint16(uint16_t value) { return value; }
+  int8_t ping_pong_int8(int8_t value) { return value; }
+  int32_t ping_pong_int32(int32_t value) { return value; }
+  int16_t ping_pong_int16(int16_t value) { return value; }
+  float ping_pong_float(float value) { return value; }
 };
 
 

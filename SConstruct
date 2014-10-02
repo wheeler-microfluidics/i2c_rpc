@@ -6,7 +6,7 @@ from path_helpers import path
 
 import arduino_scons.auto_config
 from arduino_scons.git_util import GitUtil
-from dmf_control_board_rpc import package_path, get_sketch_directory
+from i2c_rpc import package_path, get_sketch_directory
 
 
 def get_version_string():
