@@ -46,16 +46,6 @@ Reactor reactor(parser, Serial, handler);
 
 
 void setup() {
-#ifdef __AVR_ATmega2560__
-  /* Join I2C bus as master. */
-  Wire.begin();
-#else
-  /* Join I2C bus as slave. */
-  Wire.onReceive(&I2CHandlerClass::i2c_receive_event);
-  Wire.onRequest(&I2CHandlerClass::i2c_request_event);
-#endif  // #ifdef __AVR_ATmega328__
-  // Set i2c clock-rate to 400kHz.
-  TWBR = 12;
 #if !defined(DISABLE_SERIAL)
   Serial.begin(115200);
   packet.reset_buffer(PACKET_SIZE, &packet_buffer[0]);
