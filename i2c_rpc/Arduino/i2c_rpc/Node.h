@@ -18,12 +18,30 @@ class Node {
 public:
   static const uint16_t EEPROM__I2C_ADDRESS = 0x00;
   uint8_t i2c_address_;
-  uint8_t output_buffer[10];
+  uint8_t output_buffer[32];
+  static const uint8_t MIN_I2C_ADDRESS = 0x05;
+  static const uint8_t MAX_I2C_ADDRESS = 0x7F;
 
   Node() {
     i2c_address_ = EEPROM.read(EEPROM__I2C_ADDRESS);
     Wire.begin(i2c_address_);
   }
+
+  UInt8Array i2c_scan() {
+    UInt8Array result;
+    result.data = &output_buffer[0];
+    result.length = 0;
+
+    for (uint8_t i = MIN_I2C_ADDRESS; i <= MAX_I2C_ADDRESS; i++) {
+      Wire.beginTransmission(i);
+      if (Wire.endTransmission() == 0) {
+        result.data[result.length++] = i;
+        delay(1);  // maybe unneeded?
+      }
+    }
+    return result;
+  }
+
   uint32_t ram_free() { return free_memory(); }
 
   int i2c_address() const { return i2c_address_; }

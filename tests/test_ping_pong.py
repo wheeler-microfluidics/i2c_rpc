@@ -1,19 +1,25 @@
 from nose.tools import ok_
 from i2c_rpc.board import I2CBoard, RemoteI2CBoard
 import numpy as np
+import serial_device
 
 
 def test_ping_pong():
-    i2c_mega2560 = I2CBoard(port='/dev/ttyUSB0')
-    i2c_uno_remote = RemoteI2CBoard(i2c_mega2560, 0x20, debug=False)
+    port = list(serial_device.get_serial_ports())[0]
+
+    i2c_local = I2CBoard(port=port)
+    i2c_devices = np.fromstring(i2c_local.i2c_scan(),
+                                dtype=np.uint8).astype(int)
+    assert(len(i2c_devices) == 1)
+    i2c_remote = RemoteI2CBoard(i2c_local, i2c_devices[0])
 
     # Test `float`.
-    yield _test_float_ping_pong, i2c_uno_remote
+    yield _test_float_ping_pong, i2c_remote
 
     # Test `int` and `uint` for 8, 16, and 32-bit widths.
     for signedness in ('u', ''):
         for width in (8, 16, 32):
-            yield _test_integral_ping_pong, i2c_uno_remote, signedness, width
+            yield _test_integral_ping_pong, i2c_remote, signedness, width
 
 
 def _test_float_ping_pong(board):
