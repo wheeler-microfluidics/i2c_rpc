@@ -21,7 +21,8 @@ pprint(i2c_rpc_files)
 
 PROTO_PREFIX = 'commands'
 
-DEFAULT_ARDUINO_BOARDS = ['uno', 'mega2560']
+#DEFAULT_ARDUINO_BOARDS = ['uno', 'mega2560']
+DEFAULT_ARDUINO_BOARDS = ['uno']
 
 setup(name='wheeler.i2c_rpc',
       version=version.getVersion(),
@@ -30,28 +31,34 @@ setup(name='wheeler.i2c_rpc',
       author_email='christian@fobel.net',
       url='http://github.com/wheeler-microfluidics/i2c_rpc.git',
       license='GPLv2',
-      install_requires=['arduino_rpc'],
+      #install_requires=['arduino_rpc'],
       packages=['i2c_rpc'],
       package_data=i2c_rpc_files)
 
 
 @task
-def generate_command_code():
-    code_generator = CodeGenerator(get_sketch_directory().joinpath('Node.h'),
-                                   disable_i2c=getattr(options, 'disable_i2c',
-                                                       False))
+def generate_protobuf_definitions():
+    from arduino_rpc.proto import (generate_protobuf_definitions as
+                                   _generate_protobuf_definitions)
+    protobuf_dir = package_path().joinpath('protobuf').abspath()
+    _generate_protobuf_definitions(get_sketch_directory(), protobuf_dir)
 
-    definition_str = code_generator.get_protobuf_definitions()
-    output_dir = package_path().joinpath('protobuf').abspath()
-    output_file = output_dir.joinpath('%s.proto' % PROTO_PREFIX)
-    with output_file.open('wb') as output:
-        output.write(definition_str)
 
-    header_str = code_generator.get_command_processor_header()
-    output_dir = get_sketch_directory()
-    output_file = output_dir.joinpath('NodeCommandProcessor.h')
-    with output_file.open('wb') as output:
-        output.write(header_str)
+@task
+def generate_command_processor_header():
+    from arduino_rpc.proto import (generate_command_processor_header as
+                                   _generate_command_processor_header)
+
+    _generate_command_processor_header(get_sketch_directory(),
+                                       get_sketch_directory())
+
+
+@task
+def generate_rpc_buffer_header():
+    from arduino_rpc.proto import (generate_rpc_buffer_header as
+                                   _generate_rpc_buffer_header)
+
+    _generate_rpc_buffer_header(get_sketch_directory())
 
 
 @task
@@ -60,41 +67,28 @@ def generate_command_code():
 # examples.
 #
 # [1]: https://code.google.com/p/nanopb/source/browse/examples/using_union_messages/README.txt
-@needs('generate_command_code')
+@needs('generate_protobuf_definitions')
 def generate_nanopb_code():
-    from nanopb_helpers import compile_nanopb
+    from arduino_rpc.proto import generate_nanopb_code as _generate_nanopb_code
 
     protobuf_dir = package_path().joinpath('protobuf').abspath()
-    for proto_path in protobuf_dir.files('*.proto'):
-        prefix = proto_path.namebase
-        nanopb = compile_nanopb(proto_path)
-        header_name = prefix + '_pb.h'
-        source_name = prefix + '_pb.c'
-        sketch = get_sketch_directory()
-        print 'write `%s` and `%s` to `%s`' % (header_name, source_name,
-                                               sketch)
-        sketch.joinpath(header_name).write_bytes(nanopb['header'])
-        sketch.joinpath(source_name).write_bytes(nanopb['source']
-                                                 .replace('{{ header_path }}',
-                                                          header_name))
+    _generate_nanopb_code(protobuf_dir, get_sketch_directory())
 
 
 @task
-@needs('generate_command_code')
+@needs('generate_protobuf_definitions')
 def generate_pb_python_module():
-    from nanopb_helpers import compile_pb
+    from arduino_rpc.proto import (generate_pb_python_module as
+                                   _generate_pb_python_module)
 
-    output_dir = package_path().abspath()
     protobuf_dir = package_path().joinpath('protobuf').abspath()
-    for proto_path in protobuf_dir.files('*.proto'):
-        prefix = proto_path.namebase
-        pb = compile_pb(proto_path)
-        output_dir.joinpath('protobuf_%s.py' %
-                            prefix).write_bytes(pb['python'])
+    output_dir = package_path().abspath()
+    _generate_pb_python_module(protobuf_dir, output_dir)
 
 
 @task
-@needs('generate_nanopb_code', 'generate_pb_python_module')
+@needs('generate_nanopb_code', 'generate_pb_python_module',
+       'generate_command_processor_header', 'generate_rpc_buffer_header')
 @cmdopts([('sconsflags=', 'f', 'Flags to pass to SCons.'),
           ('boards=', 'b', 'Comma-separated list of board names to compile '
            'for (e.g., `uno`).')])

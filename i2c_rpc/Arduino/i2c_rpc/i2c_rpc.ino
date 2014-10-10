@@ -8,22 +8,13 @@
 #include "Node.h"
 #include "NodeCommandProcessor.h"
 #include "packet_handler.h"
+#include "RPCBuffer.h"
 
+int8_t ERROR_CODE = 35;
 
-#define PACKET_SIZE   64
-#define COMMAND_ARRAY_BUFFER_SIZE   56
-/* To save RAM, the serial-port interface may be disabled by defining
- * `DISABLE_SERIAL`. */
-#ifndef DISABLE_SERIAL
-uint8_t packet_buffer[PACKET_SIZE];
-#endif  // #ifndef DISABLE_SERIAL
-
-/*  - Allocate buffer for command-processor to extract/write array data. */
-uint8_t command_array_buffer[COMMAND_ARRAY_BUFFER_SIZE];
 UInt8Array command_array = {COMMAND_ARRAY_BUFFER_SIZE,
                             &command_array_buffer[0]};
 
-uint8_t i2c_packet_buffer[PACKET_SIZE];
 uint8_t processing_i2c_request = false;
 uint8_t i2c_response_size_sent = false;
 FixedPacket i2c_packet;
@@ -57,7 +48,7 @@ void setup() {
   Wire.onRequest(i2c_request_event);
 #endif  // #ifdef __AVR_ATmega328__
   // Set i2c clock-rate to 400kHz.
-  TWBR = 12;
+  //TWBR = 12;
 #if !defined(DISABLE_SERIAL)
   Serial.begin(115200);
   packet.reset_buffer(PACKET_SIZE, &packet_buffer[0]);
