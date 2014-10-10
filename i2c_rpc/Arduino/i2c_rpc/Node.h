@@ -60,22 +60,18 @@ public:
     EEPROM.write(EEPROM__I2C_ADDRESS, i2c_address_);
     return address;
   }
+  uint8_t echo_uint8(uint8_t value) { return value; }
+  uint32_t echo_uint32(uint32_t value) { return value; }
+  uint16_t echo_uint16(uint16_t value) { return value; }
+  int8_t echo_int8(int8_t value) { return value; }
+  int32_t echo_int32(int32_t value) { return value; }
+  int16_t echo_int16(int16_t value) { return value; }
+  float echo_float(float value) { return value; }
 #if 0
-  uint8_t ping_pong_uint8(uint8_t value) { return value; }
-  uint32_t ping_pong_uint32(uint32_t value) { return value; }
-  uint16_t ping_pong_uint16(uint16_t value) { return value; }
-  int8_t ping_pong_int8(int8_t value) { return value; }
-  int32_t ping_pong_int32(int32_t value) { return value; }
-  int16_t ping_pong_int16(int16_t value) { return value; }
-  float ping_pong_float(float value) { return value; }
   UInt8Array do_i2c_query(uint8_t address) {
     UInt8Array result = i2c_query_(address, msg);
     return result;
   }
-#endif
-  uint8_t echo_uint8(uint8_t value) { return value; }
-  uint8_t echo_uint16(uint8_t value) { return value; }
-  float echo_float(float value) { return value; }
   UInt8Array get_command() { return i2c_query_.cached_message_; }
   void queue_command(UInt8Array command) {
     if (i2c_query_.cached_message_.length == 0) {
@@ -84,9 +80,11 @@ public:
     memcpy(i2c_query_.cached_message_.data, command.data, command.length);
     i2c_query_.cached_message_.length = command.length;
   }
-  UInt8Array apply_command(uint8_t address) {
-    return i2c_query_.exec(address);
-  }
+  UInt8Array repeat() { return i2c_query_.repeat(); }
+#endif
+  //UInt8Array apply_command(uint8_t address) {
+    //return i2c_query_.exec(address);
+  //}
 };
 
 
