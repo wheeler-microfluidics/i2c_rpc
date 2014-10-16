@@ -1,4 +1,4 @@
-from nose.tools import ok_
+from nose.tools import ok_, eq_
 from i2c_rpc.board import I2CBoard, RemoteI2CBoard
 import numpy as np
 import serial_device
@@ -21,6 +21,16 @@ def echo_test():
         for width in (8, 16, 32):
             yield _test_echo_integral, i2c_remote, signedness, width
 
+    # Construct a string of characters spanning the range of values
+    # representable by a byte.
+    msg = np.linspace(0, 255, 10).astype(np.uint8).tostring()
+    yield _test_echo_str, i2c_remote, msg
+
+    # Construct a string of characters spanning the range of values
+    # representable by a byte in reverse order, ending with a zero.
+    msg = np.linspace(0, 255, 10).astype(np.uint8).tostring()
+    yield _test_echo_str, i2c_remote, msg
+
 
 def _test_echo_float(board):
     values = np.linspace(0, 100)
@@ -34,3 +44,7 @@ def _test_echo_integral(board, signedness, width):
     ok_(np.allclose(np.array([getattr(board, 'echo_%sint%d' %
                                       (signedness, width))(value=f)
                               for f in values]), values))
+
+
+def _test_echo_str(board, msg):
+    eq_(msg, board.echo_str(msg=msg))
