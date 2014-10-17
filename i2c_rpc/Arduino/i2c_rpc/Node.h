@@ -28,7 +28,6 @@ public:
 
   Node() : i2c_query_({sizeof(output_buffer), output_buffer}) {
     i2c_address_ = EEPROM.read(EEPROM__I2C_ADDRESS);
-    i2c_query_.cached_message_ = {sizeof(command_buffer), command_buffer};
     Wire.begin(i2c_address_);
   }
 
@@ -69,6 +68,12 @@ public:
   int32_t echo_int32(int32_t value) { return value; }
   int16_t echo_int16(int16_t value) { return value; }
   float echo_float(float value) { return value; }
+
+  UInt8Array do_i2c_query(uint8_t address, UInt8Array msg) {
+    /* Send an encoded request over I2C and return the encoded response. */
+    UInt8Array result = i2c_query_(address, msg);
+    return result;
+  }
 };
 
 
