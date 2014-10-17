@@ -9,31 +9,8 @@
 #include "commands_pb.h"
 #include "remote_i2c_command.h"
 #include "RPCBuffer.h"
+#include "NodeCommandProcessor.h"
 #define BROADCAST_ADDRESS 0x00
-
-
-union EchoInt32Message {
-  EchoInt32Request request;
-  EchoInt32Response response;
-};
-
-
-union EchoUint32Message {
-  EchoUint32Request request;
-  EchoUint32Response response;
-};
-
-
-union EchoUint8Message {
-  EchoUint8Request request;
-  EchoUint8Response response;
-};
-
-
-union EchoFloatMessage {
-  EchoFloatRequest request;
-  EchoFloatResponse response;
-};
 
 
 /* Callback functions for slave device. */
