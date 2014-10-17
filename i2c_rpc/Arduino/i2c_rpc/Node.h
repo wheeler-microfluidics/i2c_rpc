@@ -12,6 +12,30 @@
 #define BROADCAST_ADDRESS 0x00
 
 
+union EchoInt32Message {
+  EchoInt32Request request;
+  EchoInt32Response response;
+};
+
+
+union EchoUint32Message {
+  EchoUint32Request request;
+  EchoUint32Response response;
+};
+
+
+union EchoUint8Message {
+  EchoUint8Request request;
+  EchoUint8Response response;
+};
+
+
+union EchoFloatMessage {
+  EchoFloatRequest request;
+  EchoFloatResponse response;
+};
+
+
 /* Callback functions for slave device. */
 extern void i2c_receive_event(int byte_count);
 extern void i2c_request_event();
@@ -48,8 +72,6 @@ public:
   }
 
   uint32_t ram_free() { return free_memory(); }
-  void reset_error() { i2c_query_.ERROR_CODE_ = 0; }
-  int8_t error_code() const { return i2c_query_.ERROR_CODE_; }
 
   int i2c_address() const { return i2c_address_; }
   int set_i2c_address(uint8_t address) {
@@ -61,16 +83,12 @@ public:
     return address;
   }
 
-#if 0
-  UInt8Array echo_str(UInt8Array msg) { return msg; }
+  //UInt8Array echo_str(UInt8Array msg) { return msg; }
   uint8_t echo_uint8(uint8_t value) { return value; }
   uint32_t echo_uint32(uint32_t value) { return value; }
-  uint16_t echo_uint16(uint16_t value) { return value; }
   int8_t echo_int8(int8_t value) { return value; }
-  int16_t echo_int16(int16_t value) { return value; }
-  float echo_float(float value) { return value; }
-#endif  // #if 0
   int32_t echo_int32(int32_t value) { return value; }
+  float echo_float(float value) { return value; }
 
   UInt8Array do_i2c_query(uint8_t address, UInt8Array msg) {
     /* Send an encoded request over I2C and return the encoded response. */
@@ -78,7 +96,6 @@ public:
     return result;
   }
 
-  //UInt8Array test_nanopb_encode(uint8_t address) {
   int32_t test_nanopb_encode_echo_int32(uint8_t address, int32_t value) {
     /* # Encode a protocol buffers message using nano pb #
      *
@@ -90,41 +107,51 @@ public:
      *  1. Encode protocol buffer message using nanopb.
      *  2. Write encoded message to `command_buffer`.
      *  3. Return `UInt8Array` referencing the contents of the encoded message. */
-    EchoInt32Request request;
+    EchoInt32Message message;
 
-    memset(&request, 0, sizeof(request));
+    message.request.value = value;
 
-    int8_t return_code;
+    i2c_query_.request(address, message, CommandRequest_fields,
+                       EchoInt32Request_fields, CommandResponse_fields,
+                       EchoInt32Response_fields);
 
-    UInt8Array request_buffer = {sizeof(command_buffer), command_buffer};
-    pb_ostream_t ostream = pb_ostream_from_buffer(request_buffer.data,
-                                                  request_buffer.length);
+    return message.response.result;
+  }
 
-    request.value = value;
+  uint8_t test_nanopb_encode_echo_uint8(uint8_t address, uint8_t value) {
+    EchoUint8Message message;
 
-    /* Serialize the response and write the encoded response to the buffer. */
-    bool status = encode_unionmessage(&ostream, CommandRequest_fields,
-                                      EchoInt32Request_fields, &request);
-    request_buffer.length = ostream.bytes_written;
+    message.request.value = value;
 
-    UInt8Array result = i2c_query_(address, request_buffer);
+    i2c_query_.request(address, message, CommandRequest_fields,
+                       EchoUint8Request_fields, CommandResponse_fields,
+                       EchoUint8Response_fields);
 
-    pb_istream_t istream = pb_istream_from_buffer(result.data, result.length);
+    return message.response.result;
+  }
 
-    EchoInt32Response response;
+  uint32_t test_nanopb_encode_echo_uint32(uint8_t address, uint32_t value) {
+    EchoUint32Message message;
 
-    return_code = decode_unionmessage_tag(&istream, CommandResponse_fields);
-    if (return_code != CommandType_ECHO_INT32) {
-      return -1;
-    }
+    message.request.value = value;
 
-    return_code = decode_unionmessage_contents(&istream,
-                                               EchoInt32Response_fields,
-                                               &response);
-    if (!return_code) {
-      return -2;
-    }
-    return response.result;
+    i2c_query_.request(address, message, CommandRequest_fields,
+                       EchoUint32Request_fields, CommandResponse_fields,
+                       EchoUint32Response_fields);
+
+    return message.response.result;
+  }
+
+  float test_nanopb_encode_echo_float(float address, float value) {
+    EchoFloatMessage message;
+
+    message.request.value = value;
+
+    i2c_query_.request(address, message, CommandRequest_fields,
+                       EchoUint32Request_fields, CommandResponse_fields,
+                       EchoUint32Response_fields);
+
+    return message.response.result;
   }
 };
 
