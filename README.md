@@ -1,0 +1,1 @@
+![https://ci.appveyor.com/api/projects/status/github/wheeler-microfluidics/i2c_rpc?branch=master&svg=true](https://ci.appveyor.com/api/projects/status/github/wheeler-microfluidics/i2c_rpc?branch=master&svg=true)
